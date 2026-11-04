@@ -1,1 +1,35 @@
-node_modules
+# Environment
+.env
+frontend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+
+# Storage
+storage/audio/*
+storage/processed/*
+storage/transcripts/*
+storage/watermarks/*
+storage/documents/*
+storage/models/*
+
+# Keep directory structure
+!.gitkeep
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
