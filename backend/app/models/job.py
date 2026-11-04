@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import BigInteger,DateTime,String,Text,func
+from sqlalchemy import BigInteger,DateTime,String,Text,func,Float
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -11,6 +11,16 @@ class Job(Base):
     original_name: Mapped[str] = mapped_column(String(255), nullable=False)
     stored_filename: Mapped[str] = mapped_column(String(255), nullable=False,unique=True)
     content_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="upload",
+    )
+
+    duration_seconds: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
     size_byte:Mapped[int] = mapped_column(BigInteger, nullable=False)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="uploaded")
