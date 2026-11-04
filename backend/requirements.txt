@@ -16,3 +16,5 @@ python-multipart==0.0.20
 
 # HTTP Client (n8n / external services)
 httpx==0.28.1
+# Management and Migrations 
+alembic==1.20.1
