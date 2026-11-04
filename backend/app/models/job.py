@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import BigInteger,DateTime,String,Text,func
 from sqlalchemy.orm import Mapped, mapped_column
-from database import Base
+from app.database import Base
 
 
 class Job(Base):
