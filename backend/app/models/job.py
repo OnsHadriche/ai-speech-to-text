@@ -61,6 +61,10 @@ class Job(Base):
         Text,
         nullable=False,
     )
+    processed_path: Mapped[str | None] = mapped_column(
+    Text,
+    nullable=True,
+    )
 
     status: Mapped[str] = mapped_column(
         String(20),
