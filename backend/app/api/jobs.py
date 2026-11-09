@@ -52,7 +52,7 @@ async def upload_audio(
         )
 
     # 3. Prepare storage
-    audio_dir = settings.storage_dir / "audio"
+    audio_dir = settings.storage_dir / "audio"/"originals"
     audio_dir.mkdir(parents=True, exist_ok=True)
 
     job_id = str(uuid.uuid4())
