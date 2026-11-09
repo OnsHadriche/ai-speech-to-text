@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 100
 
     storage_dir: Path = PROJECT_ROOT / "storage"
+    
 
     n8n_webhook_url: str | None = None
     
@@ -46,3 +47,16 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+STORAGE_DIRECTORIES = [
+    settings.storage_dir / "audio" / "originals",
+    settings.storage_dir / "audio" / "processed",
+    settings.storage_dir / "documents",
+    settings.storage_dir / "transcripts",
+    settings.storage_dir / "models",
+    settings.storage_dir / "watermarks",
+    settings.storage_dir / "temp",
+]
+
+for directory in STORAGE_DIRECTORIES:
+    directory.mkdir(parents=True, exist_ok=True)
