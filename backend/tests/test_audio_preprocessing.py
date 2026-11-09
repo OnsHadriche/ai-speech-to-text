@@ -5,12 +5,22 @@ from app.services.audio_processing import (
     process_audio,
     AudioProcessingError,
 )
+BACKEND_DIR = Path(__file__).resolve().parents[2]
 
-INPUT_DIR = Path("storage/audio")
-OUTPUT_DIR = Path("storage/processed")
+print(f"Backend directory: {BACKEND_DIR}")
+
+INPUT_DIR = BACKEND_DIR /"storage" / "audio"/"originals"
+OUTPUT_DIR = BACKEND_DIR / "storage" / "processed"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+print(f"Input directory: {INPUT_DIR}")
+print(f"Output directory: {OUTPUT_DIR}")
 
+if not INPUT_DIR.exists():
+    raise FileNotFoundError(
+        f"Audio input directory does not exist: {INPUT_DIR}"
+    )
+    
 for input_path in INPUT_DIR.iterdir():
 
     if input_path.suffix.lower() not in {
