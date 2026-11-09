@@ -10,7 +10,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 print(f"Backend directory: {BACKEND_DIR}")
 
 INPUT_DIR = BACKEND_DIR /"storage" / "audio"/"originals"
-OUTPUT_DIR = BACKEND_DIR / "storage" / "processed"
+OUTPUT_DIR = BACKEND_DIR / "storage" /"audio"/ "processed"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 print(f"Input directory: {INPUT_DIR}")
