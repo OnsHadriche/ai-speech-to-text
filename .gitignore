@@ -1,1 +1,6 @@
 .env
+# Audio and generated files
+/storage/audio/
+/storage/transcripts/
+/storage/documents/
+/storage/temp/
