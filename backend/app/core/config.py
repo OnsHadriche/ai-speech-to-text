@@ -15,6 +15,19 @@ class Settings(BaseSettings):
     storage_dir: Path = PROJECT_ROOT / "storage"
 
     n8n_webhook_url: str | None = None
+    
+    allowed_audio_extensions: set[str] = {
+        ".wav",
+        ".mp3",
+        ".m4a",
+        ".mp4",
+        ".webm",
+        ".ogg",
+        ".flac",
+    }
+    
+    upload_chunk_size: int = 1024 * 1024
+    
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
