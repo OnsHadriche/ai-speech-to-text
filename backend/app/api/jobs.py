@@ -101,6 +101,7 @@ async def upload_audio(
             source_type=source_type,
             duration_seconds=None,
             status="uploaded",
+            error_message=None,
         )
 
         db.add(job)
