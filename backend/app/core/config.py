@@ -47,6 +47,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+# Create storage directories automatically
 
 STORAGE_DIRECTORIES = [
     settings.storage_dir / "audio" / "originals",
