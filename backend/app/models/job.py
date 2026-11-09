@@ -15,6 +15,7 @@ class Job(Base):
         String(20),
         nullable=False,
         default="upload",
+        server_default="upload"
     )
 
     duration_seconds: Mapped[float | None] = mapped_column(
