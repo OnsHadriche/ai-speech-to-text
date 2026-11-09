@@ -9,3 +9,7 @@ app/models/__pycache__/
 alembic/__pycache__/
 alembic/versions/__pycache__/
 alembic/script.py.mako
+
+tests/__pycache__/
+app/schemas/__pycache__/
+app/services/__pycache__/
