@@ -25,6 +25,15 @@ class Settings(BaseSettings):
         ".ogg",
         ".flac",
     }
+    target_sample_rate: int = 16000
+    supported_extensions: set[str] = {
+        ".wav",
+        ".mp3",
+        ".m4a",
+        ".webm",
+        ".ogg",
+        ".flac",
+    }
     
     upload_chunk_size: int = 1024 * 1024
     
