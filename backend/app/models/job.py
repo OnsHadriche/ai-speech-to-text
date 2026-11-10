@@ -9,6 +9,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    JSON,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -71,6 +72,27 @@ class Job(Base):
         nullable=False,
         default="uploaded",
         server_default="uploaded",
+    )
+
+
+    transcript_text: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    detected_language: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    language_probability: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    transcription_segments: Mapped[list | None] = mapped_column(
+        JSON,
+        nullable=True,
     )
 
     error_message: Mapped[str | None] = mapped_column(
