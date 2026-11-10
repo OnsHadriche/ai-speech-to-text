@@ -18,33 +18,32 @@ def test_transcription():
         raise FileNotFoundError(
             f"No processed WAV files found in {AUDIO_DIR}"
         )
+    for audio_file in audio_files:
+        print(f"Found audio file: {audio_file.name}")
 
-    audio_path = audio_files[0]
+        print("Starting transcription...")
 
-    print(f"\nAudio file: {audio_path.name}")
-    print("Starting transcription...")
+        try:
+            result = transcription_service.transcribe(audio_file)
 
-    try:
-        result = transcription_service.transcribe(audio_path)
+            print("\n--- TRANSCRIPTION RESULT ---")
+            print(f"Language: {result.language}")
+            print(f"Language probability: {result.language_probability}")
+            print(f"Duration: {result.duration_seconds}s")
 
-        print("\n--- TRANSCRIPTION RESULT ---")
-        print(f"Language: {result.language}")
-        print(f"Language probability: {result.language_probability}")
-        print(f"Duration: {result.duration_seconds}s")
+            print("\nTranscribed text:")
+            print(result.text)
 
-        print("\nTranscribed text:")
-        print(result.text)
+            print("\nSegments:")
+            for segment in result.segments:
+                print(
+                    f"[{segment.start:.2f}s - {segment.end:.2f}s] "
+                    f"{segment.text}"
+                )
 
-        print("\nSegments:")
-        for segment in result.segments:
-            print(
-                f"[{segment.start:.2f}s - {segment.end:.2f}s] "
-                f"{segment.text}"
-            )
-
-    except TranscriptionError as exc:
-        print(f"Transcription failed: {exc}")
-        raise
+        except TranscriptionError as exc:
+            print(f"Transcription failed: {exc}")
+            raise
 
 
 if __name__ == "__main__":
