@@ -1,9 +1,10 @@
 
 from datetime import datetime
-
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, computed_field
 
-
+class JobCreate(BaseModel):
+    source_type: Literal["upload", "microphone"] = "upload"
 class JobResponse(BaseModel):
     id: str
     original_name: str
@@ -30,11 +31,3 @@ class JobResponse(BaseModel):
         from pathlib import Path
         return Path(self.original_name).suffix.lower()
 
-class TranscriptionResponse(BaseModel):
-    job_id: str
-    status: str
-    language: str
-    language_probability: float
-    duration_seconds: float
-    text: str
-    segments: list[dict]

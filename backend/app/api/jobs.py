@@ -7,6 +7,7 @@ from app.services.audio_processing import (
     process_audio,
     AudioProcessingError,
 )
+import httpx
 from app.services.transcription import TranscriptionService, TranscriptionError
 from fastapi import (
     APIRouter,
@@ -22,12 +23,49 @@ from app.core.config import settings
 from app.database import get_db
 from app.models import Job
 from app.schemas import JobResponse, TranscriptionResponse
-from dataclasses import dataclass
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 
+# N8N Webhook Notification Function
+async def notify_n8n_audio_processed(
+    job_id: str,
+    source_type: str,
+) -> None:
+    """
+    Notify n8n after audio preprocessing and database persistence.
+    """
 
+    if not settings.n8n_webhook_url:
+        logger.warning("n8n webhook URL is not configured.")
+        return
+
+    payload = {
+        "job_id": job_id,
+        "event": "audio_processed",
+        "source_type": source_type,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                settings.n8n_webhook_url,
+                json=payload,
+            )
+            response.raise_for_status()
+
+        logger.info(
+            "n8n notified successfully for job %s",
+            job_id,
+        )
+
+    except httpx.HTTPError:
+        logger.exception(
+            "Could not notify n8n for job %s",
+            job_id,
+        )
+# Upload Audio Endpoint
 @router.post(
     "/upload",
     response_model=JobResponse,
@@ -38,6 +76,7 @@ async def upload_audio(
     source_type: Literal["upload", "microphone"] = Form(...),
     db: Session = Depends(get_db),
 ):
+    """Upload an audio file, process it, and create a job record in the database."""
     # 1. Validate filename
     if not file.filename:
         raise HTTPException(
@@ -131,17 +170,19 @@ async def upload_audio(
         db.commit()
         db.refresh(job)
 
+        await notify_n8n_audio_processed(job_id=job.id, source_type=source_type)
         # 7. Return created job
         return JobResponse.model_validate(job)
 
     except HTTPException:
         db.rollback()
         final_path.unlink(missing_ok=True)
+        processed_path.unlink(missing_ok=True)
         raise
-
     except Exception as exc:
         db.rollback()
         final_path.unlink(missing_ok=True)
+        processed_path.unlink(missing_ok=True)
 
         logger.exception("Audio upload failed")
 
@@ -161,13 +202,20 @@ def transcribe_audio(
 ):
     # Retrieve the job from the database
     job = db.query(Job).filter(Job.id == job_id).first()
-    print(f"Retrieved job: {job}")
-    print(f"Job status: {job.status if job else 'N/A'}")
-
     if not job:
         raise HTTPException(
             status_code=404,
             detail="Job not found.",
+        )
+    if job.status == "transcribed":
+        return TranscriptionResponse(
+            job_id=job.id,
+            status=job.status,
+            language=job.detected_language,
+            language_probability=job.language_probability,
+            duration_seconds=job.duration_seconds,
+            text=job.transcript_text,
+            segments=job.transcription_segments or [],
         )
     if job.status not in ("audio_processed", "transcription_failed"):
         raise HTTPException(
