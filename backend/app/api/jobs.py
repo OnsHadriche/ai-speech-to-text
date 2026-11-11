@@ -7,6 +7,7 @@ from app.services.audio_processing import (
     process_audio,
     AudioProcessingError,
 )
+from app.services.transcription import TranscriptionService, TranscriptionError
 from fastapi import (
     APIRouter,
     Depends,
@@ -20,8 +21,8 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database import get_db
 from app.models import Job
-from app.schemas import JobResponse
-
+from app.schemas import JobResponse, TranscriptionResponse
+from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
@@ -151,3 +152,94 @@ async def upload_audio(
 
     finally:
         await file.close()
+
+@router.post(
+    "/{job_id}/transcribe", response_model=TranscriptionResponse)
+def transcribe_audio(
+    job_id: str,
+    db: Session = Depends(get_db),
+):
+    # Retrieve the job from the database
+    job = db.query(Job).filter(Job.id == job_id).first()
+    print(f"Retrieved job: {job}")
+    print(f"Job status: {job.status if job else 'N/A'}")
+
+    if not job:
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found.",
+        )
+    if job.status not in ("audio_processed", "transcription_failed"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job is not ready for transcription. Current status: {job.status}",
+        )
+    if not job.processed_path:
+        raise HTTPException(
+            status_code=400,
+            detail="Processed audio file not found.",
+        )
+    processed_path = Path(job.processed_path)
+    if not processed_path.exists() or not processed_path.is_file():
+        raise HTTPException(
+            status_code=400,
+            detail="Processed audio file is missing or invalid.",
+        )
+    try:
+        transcription_service = TranscriptionService()
+        transcription_result = transcription_service.transcribe(
+            audio_path=job.processed_path
+        )
+
+        # Update the job with transcription results
+        job.transcript_text = transcription_result.text
+        job.detected_language = transcription_result.language
+        job.language_probability = transcription_result.language_probability
+        job.duration_seconds = transcription_result.duration_seconds
+        job.transcription_segments = [
+            segment.__dict__ for segment in transcription_result.segments
+        ]
+        job.status = "transcribed"
+        db.commit()
+        db.refresh(job)
+
+        return TranscriptionResponse(
+            job_id=job.id,
+            status=job.status,
+            language=job.detected_language,
+            language_probability=job.language_probability,
+            duration_seconds=job.duration_seconds,
+            text=job.transcript_text,
+            segments=job.transcription_segments or [],
+        )
+
+    except TranscriptionError as e:
+        logger.error(f"Transcription failed for job {job_id}: {e}")
+        job.status = "transcription_failed"
+        job.error_message = str(e)
+        db.commit()
+        db.refresh(job)
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Transcription failed: {e}",
+        )
+    except Exception as exc:
+        print(f"TRANSCRIPTION DEBUG ERROR: {type(exc).__name__}: {exc!r}")
+        db.rollback()
+
+        logger.exception(
+            "Transcription failed for job %s",
+            job_id,
+        )
+
+        job = db.get(Job, job_id)
+        if job is not None:
+            job.status = "transcription_failed"
+            job.error_message = "Internal transcription error."
+            db.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail="An internal transcription error occurred.",
+        ) from exc

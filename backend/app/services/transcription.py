@@ -109,4 +109,4 @@ class TranscriptionService:
             ) from exc
 
 
-transcription_service = TranscriptionService()
+
