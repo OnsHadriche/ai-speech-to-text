@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Integer,
     BigInteger,
     DateTime,
     Float,
@@ -66,7 +67,12 @@ class Job(Base):
     Text,
     nullable=True,
     )
-
+    transcription_attempts: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False,
+    )
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
