@@ -13,6 +13,10 @@ class JobResponse(BaseModel):
     storage_path: str
     source_type: str
     duration_seconds: float | None
+    transcript_text: str | None = None
+    detected_language: str | None = None
+    language_probability: float | None = None
+    transcription_segments: list[dict] | None = None
     status: str
     error_message: str | None
     created_at: datetime
