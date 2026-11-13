@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 100
 
     storage_dir: Path = PROJECT_ROOT / "storage"
-    
+    max_transcription_attempts: int = 3
 
     n8n_webhook_url: str | None = None
-    
+    recovery_api_key: str | None = None
     allowed_audio_extensions: set[str] = {
         ".wav",
         ".mp3",
