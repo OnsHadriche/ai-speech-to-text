@@ -18,12 +18,12 @@ from fastapi import (
     UploadFile,
 )
 from sqlalchemy.orm import Session
-from sqlalchemy import update
+from sqlalchemy import update, func
 from app.core.config import settings
 from app.database import get_db
 from app.models import Job
 from app.schemas import JobResponse, TranscriptionResponse, TranscriptionFailureRequest
-
+from app.services.transcription_recovery import recover_stale_transcriptions
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
@@ -252,11 +252,13 @@ def transcribe_audio(
         .where(
             Job.id == job_id,
             Job.status.in_(["audio_processed", "transcription_failed"]),
+            Job.transcription_attempts < settings.max_transcription_attempts,
         )
         .values(
             status="transcribing",
             error_message=None,
             transcription_attempts=Job.transcription_attempts + 1,
+            updated_at=func.now(),
         )
         .execution_options(synchronize_session=False)
     )
@@ -276,6 +278,11 @@ def transcribe_audio(
                 duration_seconds=current_job.duration_seconds,
                 text=current_job.transcript_text,
                 segments=current_job.transcription_segments or [],
+            )
+        if current_job and current_job.transcription_attempts >= settings.max_transcription_attempts:
+            raise HTTPException(
+                status_code=409,
+                detail="Maximum transcription attempts reached for this job.",
             )
 
         raise HTTPException(
@@ -339,8 +346,9 @@ def transcribe_audio(
         job = db.query(Job).filter(Job.id == job_id).first()
 
         if job:
-            job.status = "transcription_failed"
+            job.status = ("transcription_failed" if job.transcription_attempts < settings.max_transcription_attempts else "transcription_failed_permanent")
             job.error_message = str(exc)
+            job.updated_at = func.now()
             db.commit()
 
         raise HTTPException(
@@ -359,8 +367,9 @@ def transcribe_audio(
         job = db.query(Job).filter(Job.id == job_id).first()
 
         if job:
-            job.status = "transcription_failed"
+            job.status = ("transcription_failed" if job.transcription_attempts < settings.max_transcription_attempts else "transcription_failed_permanent")
             job.error_message = "Internal transcription error."
+            job.updated_at = func.now()
             db.commit()
 
         raise HTTPException(
@@ -403,3 +412,29 @@ def mark_transcription_failed(
         "status": job.status,
         "error_message": job.error_message,
     }
+
+@router.post("/maintenance/recover-stale-transcriptions")
+def recover_stale_transcriptions_endpoint(
+    db: Session = Depends(get_db),
+):
+    try:
+        result = recover_stale_transcriptions(db)
+
+        logger.info(
+            "Transcription recovery completed: %s",
+            result,
+        )
+
+        return {
+            "success": True,
+            **result,
+        }
+
+    except Exception:
+        db.rollback()
+        logger.exception("Transcription recovery failed")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Transcription recovery failed.",
+        )
