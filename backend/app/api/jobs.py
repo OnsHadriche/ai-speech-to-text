@@ -24,6 +24,11 @@ from app.database import get_db
 from app.models import Job
 from app.schemas import JobResponse, TranscriptionResponse, TranscriptionFailureRequest
 from app.services.transcription_recovery import recover_stale_transcriptions
+from app.core.security import verify_recovery_api_key
+
+
+
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
@@ -346,7 +351,7 @@ def transcribe_audio(
         job = db.query(Job).filter(Job.id == job_id).first()
 
         if job:
-            job.status = ("transcription_failed" if job.transcription_attempts < settings.max_transcription_attempts else "transcription_failed_permanent")
+            job.status = ("transcription_failed" if job.transcription_attempts < settings.max_transcription_attempts else "failed_permanently")
             job.error_message = str(exc)
             job.updated_at = func.now()
             db.commit()
@@ -367,7 +372,7 @@ def transcribe_audio(
         job = db.query(Job).filter(Job.id == job_id).first()
 
         if job:
-            job.status = ("transcription_failed" if job.transcription_attempts < settings.max_transcription_attempts else "transcription_failed_permanent")
+            job.status = ("transcription_failed" if job.transcription_attempts < settings.max_transcription_attempts else "failed_permanently")
             job.error_message = "Internal transcription error."
             job.updated_at = func.now()
             db.commit()
@@ -413,7 +418,7 @@ def mark_transcription_failed(
         "error_message": job.error_message,
     }
 
-@router.post("/maintenance/recover-stale-transcriptions")
+@router.post("/maintenance/recover-stale-transcriptions", dependencies=[Depends(verify_recovery_api_key)])
 def recover_stale_transcriptions_endpoint(
     db: Session = Depends(get_db),
 ):
