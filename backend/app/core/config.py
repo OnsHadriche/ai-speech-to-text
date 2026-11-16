@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     n8n_webhook_url: str | None = None
     recovery_api_key: str | None = None
+    log_level: str = "INFO"
     allowed_audio_extensions: set[str] = {
         ".wav",
         ".mp3",
