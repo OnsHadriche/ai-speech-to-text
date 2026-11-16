@@ -106,3 +106,19 @@ def test_ignore_recently_updated_job(db_session):
     assert result["recovered_count"] == 0
     assert result["permanently_failed_count"] == 0
     assert job.status == "transcribing"
+    
+def test_ignore_job_with_unsupported_status(db_session):
+    job = create_job(
+        db_session,
+        status="audio_processed",
+        attempts=0,
+    )
+
+    result = recover_stale_transcriptions(db_session)
+
+    db_session.refresh(job)
+
+    assert result["recovered_count"] == 0
+    assert result["permanently_failed_count"] == 0
+    assert job.status == "audio_processed"
+    assert job.transcription_attempts == 0
