@@ -8,6 +8,7 @@ from sqlalchemy import or_, func
 
 STALE_TIMEOUT_MINUTES = 30
 MAX_TRANSCRIPTION_ATTEMPTS = 3
+PENDING_AUDIO_TIMEOUT_MINUTES = 5
 
 
 def recover_stale_transcriptions(db: Session) -> dict:
@@ -63,3 +64,38 @@ def recover_stale_transcriptions(db: Session) -> dict:
         "retry_job_ids": retry_job_ids,
         "permanently_failed_ids": permanently_failed_ids,
     }
+    
+
+
+def find_pending_audio_jobs(db: Session) -> dict:
+    """
+    Find audio jobs that may not have reached n8n.
+    Return their IDs for retry by the n8n workflow.
+    """
+
+    cutoff_time = datetime.now(timezone.utc) - timedelta(
+        minutes=PENDING_AUDIO_TIMEOUT_MINUTES
+    )
+
+    pending_jobs = (
+        db.query(Job)
+        .filter(
+            Job.status == "audio_processed",
+            Job.created_at < cutoff_time,
+            Job.processed_path.isnot(None),
+            Job.transcription_attempts < MAX_TRANSCRIPTION_ATTEMPTS,
+            or_(
+                Job.transcript_text.is_(None),
+                func.trim(Job.transcript_text) == "",
+            ),
+        )
+        .all()
+    )
+
+    pending_job_ids = [job.id for job in pending_jobs]
+
+    return {
+        "pending_count": len(pending_job_ids),
+        "pending_job_ids": pending_job_ids,
+    }
+
