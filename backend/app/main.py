@@ -5,19 +5,23 @@ from app.api.jobs import router as jobs_router
 from sqlalchemy import text
 
 from app.database import engine
+from app.core.config import settings
 import logging
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.log_level),
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     force=True,
 )
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="AI Speech to Word API",
     description="Multilingual Audio to Word Automation",
     version="0.1.0"
 )
+
 
 app.include_router(
     jobs_router
