@@ -23,7 +23,10 @@ from app.core.config import settings
 from app.database import get_db
 from app.models import Job
 from app.schemas import JobResponse, TranscriptionResponse, TranscriptionFailureRequest
-from app.services.transcription_recovery import recover_stale_transcriptions
+from app.services.transcription_recovery import (
+    recover_stale_transcriptions,
+    find_pending_audio_jobs,
+)
 from app.core.security import verify_recovery_api_key
 
 
@@ -400,10 +403,10 @@ def mark_transcription_failed(
             detail="Job not found",
         )
 
-    if job.status == "transcribed":
+    if job.status in ("transcribed", "failed_permanently"):
         raise HTTPException(
             status_code=409,
-            detail="Job is already transcribed",
+            detail="Job is already transcribed or permanently failed.",
         )
 
     job.status = "transcription_failed"
@@ -442,4 +445,34 @@ def recover_stale_transcriptions_endpoint(
         raise HTTPException(
             status_code=500,
             detail="Transcription recovery failed.",
+        )
+
+@router.post(
+    "/maintenance/recover-pending-audio",
+    dependencies=[Depends(verify_recovery_api_key)],
+)
+def recover_pending_audio_endpoint(
+    db: Session = Depends(get_db),
+):
+    try:
+        result = find_pending_audio_jobs(db)
+
+        logger.info(
+            "Pending audio recovery check completed: %s",
+            result,
+        )
+
+        return {
+            "success": True,
+            **result,
+        }
+
+    except Exception:
+        db.rollback()
+
+        logger.exception("Pending audio recovery check failed")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Pending audio recovery failed.",
         )
