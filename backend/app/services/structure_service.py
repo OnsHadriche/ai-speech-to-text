@@ -197,3 +197,155 @@ def split_segment(
     except Exception:
         db.rollback()
         raise
+def merge_segments(
+    db: Session,
+    document_id: str,
+    segment_ids: list[str],
+    separator: str = "\n\n",
+) -> DocumentSegment:
+    """
+    Merge adjacent segments into one segment.
+
+    The first segment is preserved.
+    Other merged segments are deleted.
+    The original transcription remains unchanged.
+    """
+
+    # 1. Validate input
+    if len(segment_ids) < 2:
+        raise ValueError("At least two segments are required.")
+
+    if len(segment_ids) != len(set(segment_ids)):
+        raise ValueError("Duplicate segment IDs are not allowed.")
+
+    # 2. Retrieve segments in document order
+    segments = list(
+        db.scalars(
+            select(DocumentSegment)
+            .where(
+                DocumentSegment.document_id == document_id,
+                DocumentSegment.id.in_(segment_ids),
+            )
+            .order_by(DocumentSegment.position)
+        ).all()
+    )
+
+    if len(segments) != len(segment_ids):
+        raise ValueError("One or more segments were not found.")
+
+    # 3. Verify adjacency and hierarchy
+    positions = [segment.position for segment in segments]
+
+    if positions != list(range(positions[0], positions[0] + len(positions))):
+        raise ValueError("Only adjacent segments can be merged.")
+
+    parent_ids = {segment.parent_id for segment in segments}
+
+    if len(parent_ids) > 1:
+        raise ValueError("Segments must have the same parent.")
+
+    if any(
+        segment.id in {other.parent_id for other in segments}
+        for segment in segments
+    ):
+        raise ValueError("Parent and child segments cannot be merged.")
+
+    first_segment = segments[0]
+    old_values = [
+        {
+            "id": segment.id,
+            "original_text": segment.original_text,
+            "position": segment.position,
+        }
+        for segment in segments
+    ]
+
+    # 4. Combine the text in document order
+    merged_text = separator.join(
+        segment.original_text for segment in segments
+    )
+
+    old_batch_ids = {
+        segment.batch_id for segment in segments
+        if segment.batch_id is not None
+    }
+
+    try:
+        # 5. Invalidate affected batches and release their segments
+        for batch_id in old_batch_ids:
+            batch = db.get(DocumentBatch, batch_id)
+
+            if batch:
+                batch.status = "skipped"
+
+            affected_segments = list(
+                db.scalars(
+                    select(DocumentSegment).where(
+                        DocumentSegment.batch_id == batch_id
+                    )
+                ).all()
+            )
+
+            for affected in affected_segments:
+                affected.batch_id = None
+
+        # 6. Update the first segment
+        first_segment.original_text = merged_text
+        first_segment.batch_id = None
+        first_segment.suggested_type = None
+        first_segment.suggestion_confidence = None
+        first_segment.suggestion_reason = None
+        first_segment.selected_type = None
+        first_segment.classification_source = None
+        first_segment.classification_status = "awaiting_confirmation"
+
+        # 7. Delete the remaining segments
+        removed_ids = {
+            segment.id for segment in segments[1:]
+        }
+
+        for segment in segments[1:]:
+            db.delete(segment)
+
+        # 8. Shift following positions
+        shift = len(segments) - 1
+
+        following_segments = list(
+            db.scalars(
+                select(DocumentSegment)
+                .where(
+                    DocumentSegment.document_id == document_id,
+                    DocumentSegment.position > positions[-1],
+                )
+                .order_by(DocumentSegment.position)
+            ).all()
+        )
+
+        for following in following_segments:
+            following.position -= shift
+
+        # 9. Record revision history
+        revision = DocumentRevision(
+            document_id=document_id,
+            segment_id=first_segment.id,
+            action="segments_merged",
+            old_value={"segments": old_values},
+            new_value={
+                "original_text": merged_text,
+                "position": first_segment.position,
+                "removed_segment_ids": list(removed_ids),
+            },
+            description="User merged adjacent document segments.",
+        )
+
+        db.add(revision)
+
+        # 10. Commit changes
+        db.commit()
+        db.refresh(first_segment)
+
+        return first_segment
+
+    except Exception:
+        db.rollback()
+        raise
