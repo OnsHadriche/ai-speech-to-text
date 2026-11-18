@@ -8,6 +8,7 @@ from app.services.audio_processing import (
     AudioProcessingError,
 )
 import httpx
+import time
 from app.services.transcription import TranscriptionService, TranscriptionError
 from fastapi import (
     APIRouter,
@@ -150,9 +151,9 @@ async def upload_audio(
                 input_path=final_path,
                 output_path=processed_path,
             )
-            print(f"Audio processed successfully: {metadata}")
+            logger.info("Audio processed successfully| Job ID: %s, job_id| duration=%.2fs", job_id, metadata.duration_seconds)
         except AudioProcessingError as e:
-            logger.error(f"Audio processing failed: {e}")
+            logger.exception("Audio processing failed | Job ID: %s, error=%s", job_id, str(e))
             raise HTTPException(
                 status_code=400,
                 detail=f"Audio processing failed: {e}",
@@ -192,8 +193,11 @@ async def upload_audio(
         final_path.unlink(missing_ok=True)
         processed_path.unlink(missing_ok=True)
 
-        logger.exception("Audio upload failed")
-
+        logger.exception(
+            "Audio upload failed | job_id=%s | filename=%s",
+            job_id,
+            original_name,
+        )
         raise HTTPException(
             status_code=500,
             detail="Could not save the audio file.",
@@ -304,7 +308,7 @@ def transcribe_audio(
     try:
         # 6. Run transcription
         transcription_service = TranscriptionService()
-
+        transcription_start = time.perf_counter()
         transcription_result = transcription_service.transcribe(
             audio_path=str(processed_path),
         )
@@ -324,14 +328,21 @@ def transcribe_audio(
             segment.__dict__
             for segment in transcription_result.segments
         ]
-
         job.status = "transcribed"
         job.error_message = None
 
         db.commit()
         db.refresh(job)
 
-        logger.info("Transcription completed for job %s", job_id)
+        transcription_duration = time.perf_counter() - transcription_start
+
+        logger.info(
+            "Transcription completed | job_id=%s | duration=%.2fs | detected_language=%s | language_probability=%.4f",
+            job_id,
+            transcription_duration,
+            job.detected_language,
+            job.language_probability,
+        )
 
         return TranscriptionResponse(
             job_id=job.id,
@@ -347,8 +358,9 @@ def transcribe_audio(
         db.rollback()
 
         logger.exception(
-            "Transcription failed for job %s",
+            "Transcription failed | job_id=%s | error_type=%s",
             job_id,
+            type(exc).__name__,
         )
 
         job = db.query(Job).filter(Job.id == job_id).first()
@@ -368,8 +380,9 @@ def transcribe_audio(
         db.rollback()
 
         logger.exception(
-            "Unexpected transcription error for job %s",
+            "Unexpected transcription error | job_id=%s | error_type=%s",
             job_id,
+            type(exc).__name__,
         )
 
         job = db.query(Job).filter(Job.id == job_id).first()
