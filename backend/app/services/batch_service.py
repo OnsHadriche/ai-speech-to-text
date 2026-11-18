@@ -91,3 +91,56 @@ def create_classification_batches(
     except Exception:
         db.rollback()
         raise
+
+def get_next_batch_for_review(
+    db: Session,
+    document_id: str,
+) -> dict | None:
+    """
+    Retrieve the next pending or in-progress batch.
+
+    Mark a pending batch as presented when it is opened.
+    """
+
+    document = db.scalar(
+        select(Document).where(Document.id == document_id)
+    )
+
+    if document is None:
+        raise ValueError("Document not found.")
+
+    batch = db.scalar(
+        select(DocumentBatch)
+        .where(
+            DocumentBatch.document_id == document_id,
+            DocumentBatch.status.in_(["pending", "presented", "in_progress"]),
+        )
+        .order_by(DocumentBatch.batch_number)
+        .limit(1)
+    )
+
+    if batch is None:
+        return None
+
+    segments = list(
+        db.scalars(
+            select(DocumentSegment)
+            .where(DocumentSegment.batch_id == batch.id)
+            .order_by(DocumentSegment.position)
+        ).all()
+    )
+
+    if batch.status == "pending":
+        batch.status = "presented"
+
+        try:
+            db.commit()
+            db.refresh(batch)
+        except Exception:
+            db.rollback()
+            raise
+
+    return {
+        "batch": batch,
+        "segments": segments,
+    }
