@@ -31,12 +31,14 @@ class AIAnalysisSegment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+
 class DocumentAnalysisResponse(BaseModel):
     """Structured AI analysis of an Arabic educational transcript."""
 
-    document_title: str | None = None
-    subject: str | None = None
-    topic: str | None = None
+    # Required fields, but their values can be null.
+    document_title: str | None
+    subject: str | None
+    topic: str | None
 
     document_type: DocumentType
 
