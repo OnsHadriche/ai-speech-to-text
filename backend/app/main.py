@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.jobs import router as jobs_router
-
+from app.api.documents import router as documents_router
 from sqlalchemy import text
 
 from app.database import engine
@@ -23,9 +23,8 @@ app = FastAPI(
 )
 
 
-app.include_router(
-    jobs_router
-)
+app.include_router(jobs_router)
+app.include_router(documents_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
