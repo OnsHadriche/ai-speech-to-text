@@ -40,6 +40,7 @@ class EducationalAgentState(TypedDict, total=False):
     ]
     revision_requests: list[dict[str, Any]]
     finalization_result: dict[str, Any]
+    review_segments: list[dict[str, Any]]
 
     document_status: str
     error: str | None
