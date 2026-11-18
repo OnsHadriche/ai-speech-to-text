@@ -1,5 +1,5 @@
 
-from app.services.ai.state import EducationalAgentState
+from app.services.ai.ai_state import EducationalAgentState
 
 
 ALLOWED_SEGMENT_TYPES = {
