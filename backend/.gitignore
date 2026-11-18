@@ -13,3 +13,4 @@ alembic/script.py.mako
 tests/__pycache__/
 app/schemas/__pycache__/
 app/services/__pycache__/
+app/services/ai/__pycache__/
