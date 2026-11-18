@@ -39,6 +39,7 @@ class EducationalAgentState(TypedDict, total=False):
         "FINALIZE_DOCUMENT",
     ]
     revision_requests: list[dict[str, Any]]
+    finalization_result: dict[str, Any]
 
     document_status: str
     error: str | None
