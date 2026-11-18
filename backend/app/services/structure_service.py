@@ -349,3 +349,105 @@ def merge_segments(
     except Exception:
         db.rollback()
         raise
+
+
+def reorder_segment(
+    db: Session,
+    document_id: str,
+    segment_id: str,
+    new_position: int,
+) -> DocumentSegment:
+    """
+    Move a segment to a new position in the document.
+
+    Preserve its content and classification.
+    Invalidate its previous classification batch.
+    """
+
+    if new_position < 1:
+        raise ValueError("Position must be greater than or equal to 1.")
+
+    segments = list(
+        db.scalars(
+            select(DocumentSegment)
+            .where(DocumentSegment.document_id == document_id)
+            .order_by(DocumentSegment.position)
+        ).all()
+    )
+
+    segment_map = {segment.id: segment for segment in segments}
+    segment = segment_map.get(segment_id)
+
+    if segment is None:
+        raise ValueError("Segment not found.")
+
+    old_position = segment.position
+
+    if new_position > len(segments):
+        raise ValueError("Position exceeds the number of document segments.")
+
+    if old_position == new_position:
+        return segment
+
+    old_batch_id = segment.batch_id
+
+    try:
+        # Invalidate the affected batch and release its segments.
+        if old_batch_id:
+            batch = db.get(DocumentBatch, old_batch_id)
+
+            if batch:
+                batch.status = "skipped"
+
+            affected_segments = list(
+                db.scalars(
+                    select(DocumentSegment).where(
+                        DocumentSegment.batch_id == old_batch_id
+                    )
+                ).all()
+            )
+
+            for affected in affected_segments:
+                affected.batch_id = None
+
+        # Use temporary positions to avoid collisions.
+        for item in segments:
+            item.position = -item.position
+
+        # Move the selected segment and shift other segments.
+        for item in segments:
+            original_position = -item.position
+
+            if item.id == segment_id:
+                item.position = new_position
+            elif old_position < new_position:
+                if old_position < original_position <= new_position:
+                    item.position = original_position - 1
+                else:
+                    item.position = original_position
+            else:
+                if new_position <= original_position < old_position:
+                    item.position = original_position + 1
+                else:
+                    item.position = original_position
+
+        # Record the modification.
+        revision = DocumentRevision(
+            document_id=document_id,
+            segment_id=segment_id,
+            action="segment_reordered",
+            old_value={"position": old_position},
+            new_value={"position": new_position},
+            description="User reordered a document segment.",
+        )
+
+        db.add(revision)
+
+        db.commit()
+        db.refresh(segment)
+
+        return segment
+
+    except Exception:
+        db.rollback()
+        raise
