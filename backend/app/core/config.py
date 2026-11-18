@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     n8n_webhook_url: str | None = None
     recovery_api_key: str | None = None
     log_level: str = "INFO"
+    groq_api_key: str | None = None
+    groq_model: str = "openai/gpt-oss-120b"
     allowed_audio_extensions: set[str] = {
         ".wav",
         ".mp3",
