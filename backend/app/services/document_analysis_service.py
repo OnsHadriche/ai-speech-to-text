@@ -6,7 +6,7 @@ from app.models.document import Document
 from app.models.document_segment import DocumentSegment
 from app.models.job import Job
 
-from backend.ai.analysis_service import (
+from ai.analysis_service import (
     analyze_educational_transcript,
 )
 from app.services.segment_service import (

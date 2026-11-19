@@ -1,5 +1,5 @@
 
-from backend.ai.ai_state import EducationalAgentState
+from ai.ai_state import EducationalAgentState
 
 
 def finalize_document_node(

@@ -1,14 +1,14 @@
 
 from langgraph.graph import StateGraph, START, END
 
-from backend.ai.ai_state import EducationalAgentState
-from backend.ai.analysis_node import analyze_document_node
-from backend.ai.presentation_node import present_batch_node
-from backend.ai.batch_response_node import (
+from ai.ai_state import EducationalAgentState
+from ai.analysis_node import analyze_document_node
+from ai.presentation_node import present_batch_node
+from ai.batch_response_node import (
     process_batch_response_node,
 )
-from backend.ai.revision_node import revise_document_node
-from backend.ai.finalization_node import finalize_document_node
+from ai.revision_node import revise_document_node
+from ai.finalization_node import finalize_document_node
 
 
 def route_agent(state: EducationalAgentState) -> str:

@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.models.document import Document
 from app.models.document_segment import DocumentSegment
 from app.models.document_revision import DocumentRevision
-from backend.generator.docx_generator import generate_docx
+from generator.docx_generator import generate_docx
 
 
 def generate_document(

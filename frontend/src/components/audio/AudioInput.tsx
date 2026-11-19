@@ -23,13 +23,15 @@ const ALLOWED_EXTENSIONS = [
   ".flac",
 ];
 
+type AudioSourceType = "upload" | "microphone";
+type InputMode = "upload" | "record";
+
 interface AudioInputProps {
   onFileSelected?: (
-    file: File,
-    sourceType: "upload" | "microphone",
+    file: File | null,
+    sourceType: AudioSourceType,
   ) => void;
 }
-type InputMode = "upload" | "record";
 
 function formatFileSize(size: number): string {
   if (size < 1024 * 1024) {
@@ -125,7 +127,10 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
   }
 
   // Handle selected file or recorded audio
-  function handleFile(file: File, sourceType: "upload"|"microphone"="upload") {
+  function handleFile(
+    file: File,
+    sourceType: AudioSourceType = "upload",
+  ) {
     if (!validateFile(file)) {
       return;
     }
@@ -143,7 +148,8 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
     setSelectedFile(file);
     setRecordingError("");
 
-    onFileSelected?.(file,sourceType);
+    // Notify parent
+    onFileSelected?.(file, sourceType);
   }
 
   // File input handler
@@ -151,7 +157,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
     const file = event.target.files?.[0];
 
     if (file) {
-      handleFile(file);
+      handleFile(file, "upload");
     }
 
     // Allow selecting the same file again
@@ -166,7 +172,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
     const file = event.dataTransfer.files?.[0];
 
     if (file) {
-      handleFile(file);
+      handleFile(file, "upload");
     }
   }
 
@@ -186,6 +192,9 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
       audioRef.current.pause();
       audioRef.current.src = "";
     }
+
+    // Notify parent that the file was removed
+    onFileSelected?.(null, "upload");
   }
 
   // Stop recording
@@ -276,7 +285,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
           },
         );
 
-        handleFile(recordedFile,"microphone");
+        handleFile(recordedFile, "microphone");
 
         // Release microphone
         streamRef.current?.getTracks().forEach((track) => track.stop());
