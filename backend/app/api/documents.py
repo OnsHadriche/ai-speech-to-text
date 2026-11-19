@@ -19,6 +19,7 @@ from app.services.ai.batch_response_node import (
     process_batch_response_node,
 )
 from app.services.document_validation_service import finalize_document
+from app.services.docx_generation_service import generate_document
 
 logger = logging.getLogger(__name__)
 
@@ -501,4 +502,44 @@ def finalize_document_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to finalize document.",
+        ) from error
+        
+@router.post("/{document_id}/generate")
+def generate_document_endpoint(
+    document_id: str,
+    db: Session = Depends(get_db),
+):
+    try:
+        result = generate_document(
+            db=db,
+            document_id=document_id,
+        )
+
+        return {
+            "message": "DOCX generated successfully.",
+            **result,
+        }
+
+    except ValueError as error:
+        message = str(error)
+
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if "not found" in message.lower()
+            else status.HTTP_400_BAD_REQUEST
+        )
+
+        raise HTTPException(
+            status_code=status_code,
+            detail=message,
+        )
+
+    except Exception as error:
+        logger.exception(
+            "Failed to generate DOCX document."
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate DOCX document.",
         ) from error
