@@ -6,7 +6,7 @@ import {
   FileAudio,
   Sparkles,
 } from "lucide-react";
-
+import AudioInput from "./components/audio/AudioInput";
 const API_URL =
   import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -121,7 +121,7 @@ function App() {
           </div>
 
           <div className="p-6 md:p-8">
-            {/* Placeholder workspace */}
+            <AudioInput/>
             <div className="rounded-2xl border-2 border-dashed border-violet-200 bg-gradient-to-br from-violet-50/70 to-blue-50/70 p-8 md:p-12">
               <div className="mx-auto max-w-xl text-center">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm">
