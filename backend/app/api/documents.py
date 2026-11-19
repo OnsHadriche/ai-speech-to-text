@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,7 +21,8 @@ from app.services.ai.batch_response_node import (
 )
 from app.services.document_validation_service import finalize_document
 from app.services.docx_generation_service import generate_document
-
+from pathlib import Path
+from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -543,3 +545,45 @@ def generate_document_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate DOCX document.",
         ) from error
+
+@router.get("/{document_id}/download")
+def download_document_endpoint(
+    document_id: str,
+    db: Session = Depends(get_db),
+):
+    document = db.query(Document).filter(
+        Document.id == document_id
+    ).first()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    if document.status != "generated":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document has not been generated yet.",
+        )
+
+    file_path = (
+        settings.storage_dir
+        / "documents"
+        / f"{document_id}.docx"
+    )
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Generated DOCX file not found.",
+        )
+
+    return FileResponse(
+        path=file_path,
+        filename=f"{document.title or document_id}.docx",
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
+    )
