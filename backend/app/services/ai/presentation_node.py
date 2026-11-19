@@ -62,8 +62,11 @@ def present_batch_node(
                 "suggestion_confidence"
             ),
             "suggestion_reason": segment.get("suggestion_reason"),
-            "selected_type": None,
-            "classification_status": "awaiting_confirmation",
+            "selected_type": segment.get("selected_type"),
+            "classification_status": segment.get(
+                "classification_status",
+                "awaiting_confirmation",
+            ),
         }
         for segment in segments
     ]
