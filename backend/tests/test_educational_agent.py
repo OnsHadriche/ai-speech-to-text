@@ -2,7 +2,7 @@
 from unittest.mock import patch
 
 from app.schemas.ai_analysis import DocumentAnalysisResponse
-from app.services.ai.graph import build_educational_agent
+from backend.ai.graph import build_educational_agent
 
 
 def test_complete_educational_agent_workflow():

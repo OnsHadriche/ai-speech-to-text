@@ -10,13 +10,13 @@ from app.schemas.document import DocumentCreate, DocumentResponse
 from app.services.document_service import create_document_from_job
 from app.services.document_analysis_service import analyze_document
 from app.services.batch_service import get_next_batch_for_review
-from app.services.ai.graph import educational_agent
+from backend.ai.graph import educational_agent
 
 from app.schemas.batch import BatchSubmissionRequest
 from app.services.classification_service import (
     submit_batch_classifications,
 )
-from app.services.ai.batch_response_node import (
+from backend.ai.batch_response_node import (
     process_batch_response_node,
 )
 from app.services.document_validation_service import finalize_document

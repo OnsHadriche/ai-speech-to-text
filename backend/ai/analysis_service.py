@@ -4,8 +4,8 @@ import json
 from groq import Groq
 
 from app.schemas.ai_analysis import DocumentAnalysisResponse
-from app.services.ai.groq_client import get_groq_client, get_groq_model
-from app.services.ai.prompts import ARABIC_EDUCATIONAL_ANALYSIS_PROMPT
+from backend.ai.groq_client import get_groq_client, get_groq_model
+from backend.ai.prompts import ARABIC_EDUCATIONAL_ANALYSIS_PROMPT
 
 
 def validate_transcript_preservation(

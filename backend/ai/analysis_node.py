@@ -1,6 +1,6 @@
 
-from app.services.ai.analysis_service import analyze_educational_transcript
-from app.services.ai.ai_state import EducationalAgentState
+from backend.ai.analysis_service import analyze_educational_transcript
+from backend.ai.ai_state import EducationalAgentState
 
 
 def analyze_document_node(

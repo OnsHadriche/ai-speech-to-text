@@ -1,5 +1,5 @@
 
-from app.services.ai.ai_state import EducationalAgentState
+from backend.ai.ai_state import EducationalAgentState
 
 
 def present_batch_node(

@@ -7,7 +7,7 @@ from docx.shared import Pt
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-from app.services.generator.formatting_rules import (
+from backend.generator.formatting_rules import (
     get_formatting_for_segment,
 )
 
