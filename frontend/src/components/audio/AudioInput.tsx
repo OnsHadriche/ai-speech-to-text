@@ -125,7 +125,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
   }
 
   // Handle selected file or recorded audio
-  function handleFile(file: File) {
+  function handleFile(file: File, sourceType: "upload"|"microphone"="upload") {
     if (!validateFile(file)) {
       return;
     }
@@ -143,7 +143,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
     setSelectedFile(file);
     setRecordingError("");
 
-    onFileSelected?.(file);
+    onFileSelected?.(file,sourceType);
   }
 
   // File input handler
@@ -276,7 +276,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
           },
         );
 
-        handleFile(recordedFile);
+        handleFile(recordedFile,"microphone");
 
         // Release microphone
         streamRef.current?.getTracks().forEach((track) => track.stop());
