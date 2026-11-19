@@ -18,6 +18,8 @@ from app.services.classification_service import (
 from app.services.ai.batch_response_node import (
     process_batch_response_node,
 )
+from app.services.document_validation_service import finalize_document
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -189,10 +191,29 @@ def get_next_classification_batch(
 
         # 2. No more batches to review
         if result is None:
+            document = db.scalar(
+                select(Document).where(Document.id == document_id)
+            )
+
+            if document is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Document not found.",
+                )
+
+            document.status = "classification_completed"
+
+            try:
+                db.commit()
+                db.refresh(document)
+            except Exception:
+                db.rollback()
+                raise
+
             return {
                 "document_id": document_id,
-                "status": "completed",
-                "message": "No more batches available for review.",
+                "status": document.status,
+                "message": "All classification batches have been completed.",
                 "batch": None,
                 "segments": [],
             }
@@ -441,4 +462,43 @@ def submit_classification_batch(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to submit batch classifications.",
+        ) from error
+
+@router.post("/{document_id}/finalize")
+def finalize_document_endpoint(
+    document_id: str,
+    db: Session = Depends(get_db),
+):
+    try:
+        document = finalize_document(
+            db=db,
+            document_id=document_id,
+        )
+
+        return {
+            "document_id": document.id,
+            "status": document.status,
+            "message": "Document successfully finalized and ready for generation.",
+        }
+
+    except ValueError as error:
+        message = str(error)
+
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if "not found" in message.lower()
+            else status.HTTP_400_BAD_REQUEST
+        )
+
+        raise HTTPException(
+            status_code=status_code,
+            detail=message,
+        )
+
+    except Exception as error:
+        logger.exception("Failed to finalize document.")
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to finalize document.",
         ) from error
