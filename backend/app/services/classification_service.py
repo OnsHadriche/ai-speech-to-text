@@ -125,7 +125,9 @@ def submit_batch_classifications(
 
     if batch.status == "completed":
         raise ValueError("This batch has already been completed.")
-
+    
+    if batch.status == "skipped":
+        raise ValueError("This batch has been skipped.")
     # 2. Validate batch size
     if not 1 <= len(classifications) <= 5:
         raise ValueError("A submission must contain between 1 and 5 classifications.")
@@ -147,7 +149,32 @@ def submit_batch_classifications(
     )
 
     segment_map = {segment.id: segment for segment in segments}
+        # Require a classification for every segment in the batch.
+    submitted_segment_ids = {
+        item["segment_id"]
+        for item in classifications
+    }
 
+    expected_segment_ids = set(segment_map.keys())
+
+    missing_segment_ids = (
+        expected_segment_ids - submitted_segment_ids
+    )
+
+    extra_segment_ids = (
+        submitted_segment_ids - expected_segment_ids
+    )
+
+    if missing_segment_ids:
+        raise ValueError(
+            f"Missing classifications for "
+            f"{len(missing_segment_ids)} segments."
+        )
+
+    if extra_segment_ids:
+        raise ValueError(
+            "Some submitted segments do not belong to this batch."
+        )
     # 5. Validate every classification before changing anything
     allowed_types = {
         "title", "subtitle", "heading", "subheading",
