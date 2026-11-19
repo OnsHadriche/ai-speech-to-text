@@ -220,8 +220,22 @@ def generate_docx(
 
         _set_run_rtl(title_run)
 
-    # Add segments in their original order.
+    # Avoid duplicating the document title when the first segment
+    # already contains the same title.
+    title_added = bool(title)
+
     for segment in segments:
+        segment_type = segment.get("selected_type")
+        segment_text = segment.get("original_text", "").strip()
+
+        if (
+            title_added
+            and segment_type == "title"
+            and segment_text == title.strip()
+        ):
+            title_added = False
+            continue
+
         _add_segment(
             doc,
             segment,
