@@ -1,79 +1,210 @@
 import { useEffect, useState } from "react";
+import {
+  AudioLines,
+  CheckCircle2,
+  Cloud,
+  FileAudio,
+  Sparkles,
+} from "lucide-react";
 
 const API_URL =
   import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 function App() {
-
-  const [status, setStatus] = useState("Checking...");
-  const [error, setError] = useState("");
+  const [backendStatus, setBackendStatus] = useState<
+    "checking" | "connected" | "disconnected"
+  >("checking");
 
   useEffect(() => {
-
     async function checkBackend() {
-
       try {
-
-        const response = await fetch(
-          `${API_URL}/api/health`
-        );
+        const response = await fetch(`${API_URL}/api/health`);
 
         if (!response.ok) {
           throw new Error("Backend request failed");
         }
 
-        const data = await response.json();
-
-        setStatus(data.status);
-
+        await response.json();
+        setBackendStatus("connected");
       } catch {
-
-        setStatus("Disconnected");
-
-        setError("Cannot connect to FastAPI");
+        setBackendStatus("disconnected");
       }
     }
 
     checkBackend();
-
   }, []);
 
   return (
+    <main className="app-background min-h-screen">
+      {/* Header */}
+      <header className="border-b border-white/70 bg-white/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-blue-500 text-white shadow-lg shadow-violet-200">
+              <AudioLines size={22} />
+            </div>
 
-    <main className="min-h-screen flex items-center justify-center p-6">
+            <div>
+              <h1 className="text-lg font-bold tracking-tight">
+                Speech To Docx <span className="gradient-text"> Studio AI</span>
+              </h1>
+              <p className="text-xs text-slate-500">
+                Audio to educational documents
+              </p>
+            </div>
+          </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-10 max-w-lg w-full">
+          {/* Backend status */}
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                backendStatus === "connected"
+                  ? "bg-emerald-500"
+                  : backendStatus === "disconnected"
+                    ? "bg-red-500"
+                    : "bg-amber-400 animate-pulse"
+              }`}
+            />
 
-        <h1 className="text-2xl font-bold mb-3">
-          AI Speech to Word
-        </h1>
-
-        <p className="text-gray-500 mb-6">
-          Project development environment
-        </p>
-
-        <div className="p-4 bg-gray-100 rounded-lg">
-
-          <p className="font-medium">
-            Backend status:
-          </p>
-
-          <p className="mt-2">
-            {status}
-          </p>
-
-          {error && (
-            <p className="text-red-500 mt-2">
-              {error}
-            </p>
-          )}
-
+            <span className="text-xs font-medium text-slate-600">
+              {backendStatus === "connected"
+                ? "System ready"
+                : backendStatus === "disconnected"
+                  ? "Backend offline"
+                  : "Connecting..."}
+            </span>
+          </div>
         </div>
+      </header>
 
+      {/* Main content */}
+      <div className="mx-auto max-w-7xl px-6 py-12">
+        {/* Hero */}
+        <section className="mb-10">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700">
+            <Sparkles size={15} />
+            AI-powered document creation
+          </div>
+
+          <h2 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 md:text-5xl">
+            Turn your audio into
+            <br />
+            <span className="gradient-text">
+              structured learning documents.
+            </span>
+          </h2>
+
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-500">
+            Transcribe your lessons, organize educational content with AI,
+            review the structure, and generate editable Word documents.
+          </p>
+        </section>
+
+        {/* Workspace */}
+        <section className="surface soft-shadow overflow-hidden">
+          <div className="border-b border-slate-100 px-6 py-5 md:px-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <FileAudio size={20} />
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-slate-900">
+                  Create a new document
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Start with an audio recording or an existing audio file.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 md:p-8">
+            {/* Placeholder workspace */}
+            <div className="rounded-2xl border-2 border-dashed border-violet-200 bg-gradient-to-br from-violet-50/70 to-blue-50/70 p-8 md:p-12">
+              <div className="mx-auto max-w-xl text-center">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm">
+                  <Cloud size={28} />
+                </div>
+
+                <h4 className="text-xl font-semibold text-slate-900">
+                  Your audio workspace
+                </h4>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Upload an audio file or record directly from your microphone.
+                  Your transcript will then be analyzed and organized into
+                  educational segments.
+                </p>
+
+                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                  <div className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+                    <FileAudio size={17} className="text-violet-500" />
+                    Audio upload
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+                    <AudioLines size={17} className="text-blue-500" />
+                    Microphone recording
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400">
+                  <CheckCircle2 size={14} className="text-emerald-500" />
+                  AI-assisted analysis · Human review · Editable DOCX
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Workflow introduction */}
+        <section className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="surface p-5">
+            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+              <AudioLines size={18} />
+            </div>
+
+            <h3 className="font-semibold text-slate-900">
+              01 · Transcribe
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Convert your audio into text using speech recognition.
+            </p>
+          </div>
+
+          <div className="surface p-5">
+            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <Sparkles size={18} />
+            </div>
+
+            <h3 className="font-semibold text-slate-900">
+              02 · Structure with AI
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Identify definitions, headings, examples, paragraphs, and more.
+            </p>
+          </div>
+
+          <div className="surface p-5">
+            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <CheckCircle2 size={18} />
+            </div>
+
+            <h3 className="font-semibold text-slate-900">
+              03 · Review & export
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Confirm the structure and generate your editable Word document.
+            </p>
+          </div>
+        </section>
       </div>
-
     </main>
-
   );
 }
 
