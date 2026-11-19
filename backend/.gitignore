@@ -14,3 +14,4 @@ tests/__pycache__/
 app/schemas/__pycache__/
 app/services/__pycache__/
 app/services/ai/__pycache__/
+app/services/generator/__pycache__/
