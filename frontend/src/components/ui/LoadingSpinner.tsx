@@ -2,14 +2,17 @@ import { Loader2 } from "lucide-react";
 
 interface LoadingSpinnerProps {
   size?: number;
+  color?: string;
   text?: string;
   className?: string;
 }
 
 export default function LoadingSpinner({
   size = 20,
+  color = "text-violet-600",
   text,
   className = "",
+ 
 }: LoadingSpinnerProps) {
   return (
     <div
@@ -19,7 +22,7 @@ export default function LoadingSpinner({
     >
       <Loader2
         size={size}
-        className="animate-spin text-violet-600"
+        className={`animate-spin ${color}`}
         aria-hidden="true"
       />
 
