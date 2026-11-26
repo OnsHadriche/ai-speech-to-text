@@ -1,70 +1,52 @@
-
 import { useEffect } from "react";
 import {
-  CheckCircle2,
   AlertCircle,
+  CheckCircle2,
   AlertTriangle,
   Info,
   X,
 } from "lucide-react";
 
-export type ToastType = "success" | "error" | "warning" | "info";
+import type { ToastType } from "../../hooks/useToast";
 
 interface ToastProps {
   message: string;
-  type?: ToastType;
-  duration?: number;
+  type: ToastType;
   onClose: () => void;
+  duration?: number;
 }
 
-const toastStyles: Record<
-  ToastType,
-  {
-    icon: typeof CheckCircle2;
-    iconColor: string;
-    iconBackground: string;
-    border: string;
-    title: string;
-  }
-> = {
+const toastConfig = {
   success: {
-    icon: CheckCircle2,
-    iconColor: "text-emerald-600",
-    iconBackground: "bg-emerald-50",
-    border: "border-emerald-200",
     title: "Success",
+    icon: CheckCircle2,
+    styles: "border-emerald-200 bg-emerald-50 text-emerald-600",
   },
   error: {
-    icon: AlertCircle,
-    iconColor: "text-red-600",
-    iconBackground: "bg-red-50",
-    border: "border-red-200",
     title: "Error",
+    icon: AlertCircle,
+    styles: "border-red-200 bg-red-50 text-red-600",
   },
   warning: {
-    icon: AlertTriangle,
-    iconColor: "text-amber-600",
-    iconBackground: "bg-amber-50",
-    border: "border-amber-200",
     title: "Warning",
+    icon: AlertTriangle,
+    styles: "border-amber-200 bg-amber-50 text-amber-600",
   },
   info: {
-    icon: Info,
-    iconColor: "text-blue-600",
-    iconBackground: "bg-blue-50",
-    border: "border-blue-200",
     title: "Information",
+    icon: Info,
+    styles: "border-blue-200 bg-blue-50 text-blue-600",
   },
 };
 
 export default function Toast({
   message,
-  type = "success",
-  duration = 3000,
+  type,
   onClose,
+  duration = 3000,
 }: ToastProps) {
-  const style = toastStyles[type];
-  const Icon = style.icon;
+  const config = toastConfig[type];
+  const Icon = config.icon;
 
   useEffect(() => {
     if (duration <= 0) return;
@@ -77,31 +59,25 @@ export default function Toast({
   return (
     <div
       role={type === "error" ? "alert" : "status"}
-      aria-live="polite"
-      className="fixed right-5 top-5 z-[100] w-[calc(100%-2.5rem)] max-w-sm animate-in slide-in-from-top-3 fade-in duration-300"
+      className="fixed right-5 top-5 z-50 w-[calc(100%-2.5rem)] max-w-sm animate-in slide-in-from-top-3 fade-in"
     >
-      <div
-        className={`flex items-start gap-3 rounded-xl border ${style.border} bg-white p-4 shadow-xl shadow-slate-200/60`}
-      >
-        {/* Icon */}
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.iconBackground} ${style.iconColor}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${config.styles}`}
         >
           <Icon size={20} />
         </div>
 
-        {/* Content */}
-        <div className="min-w-0 flex-1 pt-0.5">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">
-            {style.title}
+            {config.title}
           </p>
 
-          <p className="mt-1 break-words text-sm leading-5 text-slate-600">
+          <p className="mt-1 break-words text-sm text-slate-600">
             {message}
           </p>
         </div>
 
-        {/* Close button */}
         <button
           type="button"
           onClick={onClose}
