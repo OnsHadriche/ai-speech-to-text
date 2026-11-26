@@ -74,6 +74,21 @@ async def notify_n8n_audio_processed(
             "Could not notify n8n for job %s",
             job_id,
         )
+        
+@router.get("/{job_id}", response_model=JobResponse)
+def get_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+):
+    job = db.query(Job).filter(Job.id == job_id).first()
+
+    if job is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found",
+        )
+
+    return job
 # Upload Audio Endpoint
 @router.post(
     "/upload",
