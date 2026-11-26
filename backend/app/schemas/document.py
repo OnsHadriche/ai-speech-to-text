@@ -36,6 +36,7 @@ class DocumentCreate(BaseModel):
         default="ar",
         max_length=10,
     )
+    reviewed_transcript: str | None = None
 
 
 class DocumentResponse(BaseModel):
