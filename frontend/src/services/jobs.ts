@@ -1,3 +1,4 @@
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 export type AudioSourceType = "upload" | "microphone";
@@ -21,6 +22,22 @@ export interface JobResponse {
   updated_at: string | null;
 }
 
+async function handleApiError(response: Response): Promise<never> {
+  let errorMessage = "An unexpected error occurred.";
+
+  try {
+    const errorData = await response.json();
+
+    errorMessage =
+      errorData.detail ?? errorData.message ?? errorMessage;
+  } catch {
+    // Keep default error message
+  }
+
+  throw new Error(errorMessage);
+}
+
+// Upload audio
 export async function uploadAudio(
   file: File,
   sourceType: AudioSourceType,
@@ -36,17 +53,22 @@ export async function uploadAudio(
   });
 
   if (!response.ok) {
-    let errorMessage = "Failed to upload audio.";
+    await handleApiError(response);
+  }
 
-    try {
-      const errorData = await response.json();
-      errorMessage =
-        errorData.detail ?? errorData.message ?? errorMessage;
-    } catch {
-      // Use default error message if response isn't JSON
-    }
+  return response.json();
+}
 
-    throw new Error(errorMessage);
+// Transcribe uploaded audio
+export async function transcribeAudio(
+  jobId: string,
+): Promise<JobResponse> {
+  const response = await fetch(`${API_URL}/api/jobs/${jobId}/transcribe`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    await handleApiError(response);
   }
 
   return response.json();
