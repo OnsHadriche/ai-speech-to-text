@@ -12,12 +12,15 @@ export interface JobResponse {
   storage_path: string;
   source_type: AudioSourceType;
   duration_seconds: number | null;
+  
   transcript_text: string | null;
   detected_language: string | null;
   language_probability: number | null;
   transcription_segments: Record<string, unknown>[] | null;
+  
   status: string;
   error_message: string | null;
+
   created_at: string;
   updated_at: string | null;
 }
@@ -60,10 +63,10 @@ export async function uploadAudio(
 }
 
 // Transcribe uploaded audio
-export async function transcribeAudio(
+export async function getJob(
   jobId: string,
 ): Promise<JobResponse> {
-  const response = await fetch(`${API_URL}/api/jobs/${jobId}/transcribe`, {
+  const response = await fetch(`${API_URL}/api/jobs/${jobId}`, {
     method: "POST",
   });
 
