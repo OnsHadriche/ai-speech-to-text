@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   AudioLines,
@@ -14,13 +15,16 @@ import AudioInput from "./components/audio/AudioInput";
 import { uploadAudio } from "./services/jobs";
 import type { JobResponse, AudioSourceType } from "./services/jobs";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
 
 function App() {
   // Backend status
   const [backendStatus, setBackendStatus] = useState<
     "checking" | "connected" | "disconnected"
   >("checking");
+
+  // Success notification
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Audio selection
   const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
@@ -54,15 +58,27 @@ function App() {
     checkBackend();
   }, []);
 
+  // Automatically hide success notification after 3 seconds
+  useEffect(() => {
+    if (!successMessage) return;
+
+    const timeout = setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [successMessage]);
+
   // Handle selected or recorded audio
   function handleAudioSelected(
-    file: File,
+    file: File | null,
     selectedSourceType: AudioSourceType,
   ) {
     setSelectedAudio(file);
     setSourceType(selectedSourceType);
     setUploadedJob(null);
     setUploadError("");
+    setSuccessMessage("");
   }
 
   // Upload audio to backend
@@ -83,11 +99,12 @@ function App() {
       setIsUploading(true);
       setUploadError("");
       setUploadedJob(null);
+      setSuccessMessage("");
 
       const job = await uploadAudio(selectedAudio, sourceType);
 
       setUploadedJob(job);
-      console.log("Audio uploaded successfully:", job);
+      setSuccessMessage("Audio uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
 
@@ -107,6 +124,7 @@ function App() {
     setSourceType("upload");
     setUploadedJob(null);
     setUploadError("");
+    setSuccessMessage("");
     setAudioInputKey((previous) => previous + 1);
   }
 
@@ -256,93 +274,9 @@ function App() {
               </>
             )}
 
-            {/* Successful upload */}
+            {/* Successful upload - next step */}
             {uploadedJob && (
               <div className="space-y-6">
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
-                      <CheckCircle2 size={25} />
-                    </div>
-
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-emerald-900">
-                        Audio uploaded successfully!
-                      </h3>
-
-                      <p className="mt-1 text-sm text-emerald-700">
-                        Your audio has been stored and is ready for the next
-                        processing step.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Job details */}
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border border-emerald-100 bg-white p-4">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Job ID
-                      </p>
-
-                      <p className="mt-2 break-all font-mono text-sm text-slate-700">
-                        {uploadedJob.id}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-emerald-100 bg-white p-4">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        File name
-                      </p>
-
-                      <p className="mt-2 break-all text-sm font-medium text-slate-700">
-                        {uploadedJob.original_name}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-emerald-100 bg-white p-4">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Source
-                      </p>
-
-                      <p className="mt-2 text-sm font-medium capitalize text-slate-700">
-                        {uploadedJob.source_type}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-emerald-100 bg-white p-4">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Status
-                      </p>
-
-                      <p className="mt-2 text-sm font-medium capitalize text-slate-700">
-                        {uploadedJob.status.replace(/_/g, " ")}
-                      </p>
-                    </div>
-
-                    {uploadedJob.duration_seconds !== null && (
-                      <div className="rounded-xl border border-emerald-100 bg-white p-4">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          Duration
-                        </p>
-
-                        <p className="mt-2 text-sm font-medium text-slate-700">
-                          {uploadedJob.duration_seconds.toFixed(2)} seconds
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="rounded-xl border border-emerald-100 bg-white p-4">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        File size
-                      </p>
-
-                      <p className="mt-2 text-sm font-medium text-slate-700">
-                        {(uploadedJob.size_byte / (1024 * 1024)).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Next step placeholder */}
                 <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50/70 to-blue-50/70 p-6">
                   <div className="flex items-start gap-3">
@@ -464,6 +398,27 @@ function App() {
           </div>
         </section>
       </div>
+
+      {/* Success toast */}
+      {successMessage && (
+        <div className="fixed right-6 top-6 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-white px-5 py-4 shadow-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <CheckCircle2 size={22} />
+            </div>
+
+            <div>
+              <p className="font-semibold text-slate-900">
+                Upload successful
+              </p>
+
+              <p className="text-sm text-slate-500">
+                Audio uploaded successfully!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
