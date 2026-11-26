@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import LoadingSpinner from "./LoadingSpinner";
 
 type ButtonVariant = "primary" | "secondary" | "outline";
 
@@ -23,12 +23,12 @@ export default function Button({
   children,
   variant = "primary",
   loading = false,
-  loadingText,
   icon,
   disabled,
   className = "",
   ...props
 }: ButtonProps) {
+    const spinnerColor = variant == "primary"?"text-white":"text-violet-600"
   return (
     <button
       type="button"
@@ -44,9 +44,11 @@ export default function Button({
       {...props}
     >
       {loading ? (
-        <>
-          <Loader2 size={17} className="animate-spin" />
-          {loadingText ?? "Loading..."}
+      <>
+          <LoadingSpinner
+            size={17}
+            color={spinnerColor}
+          />
         </>
       ) : (
         <>
