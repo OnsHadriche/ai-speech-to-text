@@ -6,6 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -57,6 +58,12 @@ class Document(Base):
         server_default="ar",
     )
 
+    reviewed_transcript: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+   
     status: Mapped[str] = mapped_column(
         String(40),
         nullable=False,
