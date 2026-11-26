@@ -15,11 +15,13 @@ import NextStepCard from "./NextStepCard";
 interface TranscriptionPanelProps {
   job: JobResponse;
   onStartNewDocument: () => void;
+  onContinueToStructuring: (transcript: string) => void;
 }
 
 export default function TranscriptionPanel({
   job,
   onStartNewDocument,
+  onContinueToStructuring,
 }: TranscriptionPanelProps) {
   // 1. Poll backend for the latest job status
   const {
@@ -37,9 +39,7 @@ export default function TranscriptionPanel({
     text: string;
   } | null>(null);
 
-  // 3. Get the transcript:
-  //    - User's edited version if available
-  //    - Otherwise the backend transcript
+  // 3. Use edited transcript or backend transcript
   const transcriptText =
     transcriptEdit?.jobId === job.id
       ? transcriptEdit.text
@@ -148,10 +148,8 @@ export default function TranscriptionPanel({
           />
 
           <NextStepCard
-            onContinue={() => {
-                // Next phase will be implemented here
-            }}
-            />
+            onContinue={() => onContinueToStructuring(transcriptText)}
+          />
         </div>
       )}
 
