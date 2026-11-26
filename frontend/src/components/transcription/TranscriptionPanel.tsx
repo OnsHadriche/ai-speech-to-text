@@ -23,7 +23,6 @@ export default function TranscriptionPanel({
   onStartNewDocument,
   onContinueToStructuring,
 }: TranscriptionPanelProps) {
-  // 1. Poll backend for the latest job status
   const {
     job: currentJob,
     error: pollingError,
@@ -33,38 +32,30 @@ export default function TranscriptionPanel({
     interval: 2000,
   });
 
-  // 2. Store only the user's edits
   const [transcriptEdit, setTranscriptEdit] = useState<{
     jobId: JobResponse["id"];
     text: string;
   } | null>(null);
 
-  // 3. Use edited transcript or backend transcript
   const transcriptText =
     transcriptEdit?.jobId === job.id
       ? transcriptEdit.text
       : currentJob?.transcript_text ?? job.transcript_text ?? "";
 
-  // 4. Calculate word count
   const wordCount = transcriptText
     .trim()
     .split(/\s+/)
     .filter(Boolean).length;
 
-  // 5. Determine job state
   const isWaiting = currentJob?.status === "audio_processed";
-
   const isTranscribing = currentJob?.status === "transcribing";
-
   const isProcessing = isWaiting || isTranscribing;
-
   const isCompleted = currentJob?.status === "transcribed";
 
   const isFailed =
     currentJob?.status === "transcription_failed" ||
     currentJob?.status === "failed_permanently";
 
-  // 6. Determine error message
   const errorMessage =
     currentJob?.error_message ??
     pollingError ??
