@@ -55,6 +55,7 @@ def create_document(
             db=db,
             job_id=payload.job_id,
             language=payload.language,
+            reviewed_transcript=payload.reviewed_transcript,
         )
 
         return document
