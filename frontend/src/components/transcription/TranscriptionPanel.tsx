@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { FileText, RotateCcw } from "lucide-react";
 
@@ -20,6 +21,7 @@ export default function TranscriptionPanel({
   job,
   onStartNewDocument,
 }: TranscriptionPanelProps) {
+  // 1. Poll backend for the latest job status
   const {
     job: currentJob,
     error: pollingError,
@@ -29,36 +31,40 @@ export default function TranscriptionPanel({
     interval: 2000,
   });
 
+  // 2. Store only the user's edits
   const [transcriptEdit, setTranscriptEdit] = useState<{
     jobId: JobResponse["id"];
     text: string;
   } | null>(null);
+
+  // 3. Get the transcript:
+  //    - User's edited version if available
+  //    - Otherwise the backend transcript
   const transcriptText =
     transcriptEdit?.jobId === job.id
       ? transcriptEdit.text
-      : currentJob?.transcript_text ?? "";
+      : currentJob?.transcript_text ?? job.transcript_text ?? "";
 
+  // 4. Calculate word count
   const wordCount = transcriptText
     .trim()
     .split(/\s+/)
     .filter(Boolean).length;
 
-  const isWaiting =
-    currentJob?.status === "audio_processed";
+  // 5. Determine job state
+  const isWaiting = currentJob?.status === "audio_processed";
 
-  const isTranscribing =
-    currentJob?.status === "transcribing";
+  const isTranscribing = currentJob?.status === "transcribing";
 
-  const isProcessing =
-    isWaiting || isTranscribing;
+  const isProcessing = isWaiting || isTranscribing;
 
-  const isCompleted =
-    currentJob?.status === "transcribed";
+  const isCompleted = currentJob?.status === "transcribed";
 
   const isFailed =
     currentJob?.status === "transcription_failed" ||
     currentJob?.status === "failed_permanently";
 
+  // 6. Determine error message
   const errorMessage =
     currentJob?.error_message ??
     pollingError ??
@@ -70,10 +76,7 @@ export default function TranscriptionPanel({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <FileText
-              size={22}
-              className="text-violet-600"
-            />
+            <FileText size={22} className="text-violet-600" />
 
             <h2 className="text-xl font-semibold text-slate-900">
               Transcription
@@ -98,10 +101,7 @@ export default function TranscriptionPanel({
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100">
-            <FileText
-              size={20}
-              className="text-violet-600"
-            />
+            <FileText size={20} className="text-violet-600" />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -117,23 +117,15 @@ export default function TranscriptionPanel({
       </div>
 
       {/* Processing state */}
-      {isProcessing && (
-        <TranscriptionLoadingState />
-      )}
+      {isProcessing && <TranscriptionLoadingState />}
 
       {/* Polling error */}
       {pollingError && !isCompleted && !isFailed && (
-        <TranscriptionError
-          message={pollingError}
-        />
+        <TranscriptionError message={pollingError} />
       )}
 
       {/* Transcription error */}
-      {isFailed && (
-        <TranscriptionError
-          message={errorMessage}
-        />
-      )}
+      {isFailed && <TranscriptionError message={errorMessage} />}
 
       {/* Completed state */}
       {isCompleted && currentJob && (
@@ -147,7 +139,10 @@ export default function TranscriptionPanel({
           <TranscriptEditor
             transcript={transcriptText}
             onTranscriptChange={(text) =>
-              setTranscriptEdit({ jobId: job.id, text })
+              setTranscriptEdit({
+                jobId: job.id,
+                text,
+              })
             }
             wordCount={wordCount}
           />
