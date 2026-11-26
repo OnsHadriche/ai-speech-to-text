@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import {
   FileAudio,
@@ -26,6 +25,16 @@ import { useAudioUpload } from "./hooks/useAudioUpload";
 
 import type { AudioSourceType } from "./services/jobs";
 
+import {
+  createDocument,
+  analyzeDocument,
+} from "./services/documents";
+
+import type {
+  DocumentResponse,
+  AnalyzeDocumentResponse,
+} from "./services/documents";
+
 type WorkflowStep = "upload" | "transcription" | "structuring";
 
 function App() {
@@ -37,12 +46,14 @@ function App() {
 
   const { toast, showToast, hideToast } = useToast();
 
-  const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
+  const [selectedAudio, setSelectedAudio] =
+    useState<File | null>(null);
 
   const [sourceType, setSourceType] =
     useState<AudioSourceType>("upload");
 
-  const [audioInputKey, setAudioInputKey] = useState(0);
+  const [audioInputKey, setAudioInputKey] =
+    useState(0);
 
   // --------------------------------------------------
   // Workflow state
@@ -52,6 +63,22 @@ function App() {
     useState<WorkflowStep>("upload");
 
   const [transcript, setTranscript] = useState("");
+
+  // --------------------------------------------------
+  // Document analysis state
+  // --------------------------------------------------
+
+  const [document, setDocument] =
+    useState<DocumentResponse | null>(null);
+
+  const [analysisResult, setAnalysisResult] =
+    useState<AnalyzeDocumentResponse | null>(null);
+
+  const [isAnalyzing, setIsAnalyzing] =
+    useState(false);
+
+  const [analysisError, setAnalysisError] =
+    useState<string | null>(null);
 
   // --------------------------------------------------
   // Upload workflow
@@ -89,6 +116,10 @@ function App() {
 
       setWorkflowStep("upload");
       setTranscript("");
+
+      setDocument(null);
+      setAnalysisResult(null);
+      setAnalysisError(null);
     },
     [resetUpload, hideToast]
   );
@@ -118,9 +149,68 @@ function App() {
     (editedTranscript: string) => {
       setTranscript(editedTranscript);
       setWorkflowStep("structuring");
+
+      setDocument(null);
+      setAnalysisResult(null);
+      setAnalysisError(null);
     },
     []
   );
+
+  // --------------------------------------------------
+  // Create document and analyze transcript
+  // --------------------------------------------------
+
+  const handleAnalyzeTranscript = useCallback(async () => {
+    if (!uploadedJob) {
+      showToast("No transcription job found.", "error");
+      return;
+    }
+
+    if (!transcript.trim()) {
+      showToast("The transcript is empty.", "warning");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    setAnalysisResult(null);
+
+    try {
+      // 1. Create document using reviewed transcript
+      const createdDocument = await createDocument({
+        job_id: uploadedJob.id,
+        language: "ar",
+        reviewed_transcript: transcript,
+      });
+
+      setDocument(createdDocument);
+
+      // 2. Trigger AI analysis
+      const result = await analyzeDocument(
+        createdDocument.id,
+        4
+      );
+
+      setAnalysisResult(result);
+
+      showToast(
+        "AI analysis completed successfully.",
+        "success"
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to analyze transcript.";
+
+      setAnalysisError(message);
+
+      showToast(message, "error");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [uploadedJob, transcript, showToast]);
 
   // --------------------------------------------------
   // Return to transcription
@@ -139,6 +229,12 @@ function App() {
     setSourceType("upload");
 
     setTranscript("");
+
+    setDocument(null);
+    setAnalysisResult(null);
+    setIsAnalyzing(false);
+    setAnalysisError(null);
+
     setWorkflowStep("upload");
 
     resetUpload();
@@ -295,20 +391,20 @@ function App() {
                     variant="secondary"
                     icon={<ArrowLeft size={16} />}
                     onClick={handleBackToTranscription}
+                    disabled={isAnalyzing}
                   >
                     Back to Transcription
                   </Button>
                 </div>
 
-                {/* Success message */}
+                {/* Transcript success message */}
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
                   <h3 className="font-semibold text-emerald-900">
                     Transcript received successfully
                   </h3>
 
                   <p className="mt-1 text-sm text-emerald-700">
-                    Your reviewed transcript has been passed to the
-                    structuring phase.
+                    Your reviewed transcript is ready for AI analysis.
                   </p>
                 </div>
 
@@ -329,21 +425,88 @@ function App() {
                   </div>
                 </div>
 
-                {/* Structuring placeholder */}
-                <div className="rounded-xl border border-dashed border-violet-300 bg-violet-50/50 p-6 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white text-violet-600">
-                    <FileAudio size={22} />
-                  </div>
+                {/* ==================================== */}
+                {/* AI Analysis                           */}
+                {/* ==================================== */}
 
-                  <h3 className="font-semibold text-slate-900">
-                    Structuring phase
-                  </h3>
+                <div className="space-y-4">
+                  {!analysisResult && (
+                    <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-6">
+                      <div className="text-center">
+                        <h3 className="font-semibold text-slate-900">
+                          Ready to analyze your transcript?
+                        </h3>
 
-                  <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500">
-                    The next phase will analyze the transcript,
-                    identify sections and titles, organize content,
-                    and allow you to review the generated structure.
-                  </p>
+                        <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500">
+                          AI will analyze your reviewed transcript,
+                          identify the document structure, detect
+                          titles and content types, and organize
+                          the segments into classification batches.
+                        </p>
+                      </div>
+
+                      {/* Error message */}
+                      {analysisError && (
+                        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                          <p className="font-semibold">
+                            Analysis failed
+                          </p>
+
+                          <p className="mt-1">
+                            {analysisError}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Analyze button */}
+                      <div className="mt-5 flex justify-center">
+                        <Button
+                          loading={isAnalyzing}
+                          loadingText="Analyzing transcript..."
+                          disabled={isAnalyzing}
+                          onClick={handleAnalyzeTranscript}
+                        >
+                          Analyze Transcript with AI
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ================================== */}
+                  {/* Analysis success                    */}
+                  {/* ================================== */}
+
+                  {analysisResult && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+                      <h3 className="font-semibold text-emerald-900">
+                        AI analysis completed successfully
+                      </h3>
+
+                      <p className="mt-1 text-sm text-emerald-700">
+                        Your transcript has been analyzed and organized
+                        into document segments.
+                      </p>
+
+                      {/* Statistics */}
+                      <div className="mt-4 grid grid-cols-1 gap-3 ">
+                        <div className="rounded-lg bg-white p-4">
+                          <p>
+                            <span className="text-slate-500">
+                              Status:
+                            </span>{" "}
+                            {analysisResult.document.status}
+                          </p>
+                        </div>
+
+          
+                        </div>
+                      </div>
+
+                    
+
+          
+      
+                  )}
                 </div>
               </section>
             )}
