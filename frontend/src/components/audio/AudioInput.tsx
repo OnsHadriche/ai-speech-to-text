@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import {
@@ -77,20 +78,16 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
   // Cleanup resources when component unmounts
   useEffect(() => {
     return () => {
-      // Release preview URL
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
       }
 
-      // Stop microphone tracks
       streamRef.current?.getTracks().forEach((track) => track.stop());
 
-      // Stop recording timer
       if (recordingTimerRef.current !== null) {
         window.clearInterval(recordingTimerRef.current);
       }
 
-      // Stop recorder if still active
       if (
         mediaRecorderRef.current &&
         mediaRecorderRef.current.state !== "inactive"
@@ -140,13 +137,14 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
       URL.revokeObjectURL(audioUrlRef.current);
     }
 
-    // Create preview URL
+    // Create new preview URL
     const newAudioUrl = URL.createObjectURL(file);
     audioUrlRef.current = newAudioUrl;
 
     setAudioUrl(newAudioUrl);
     setSelectedFile(file);
     setRecordingError("");
+    setError("");
 
     // Notify parent
     onFileSelected?.(file, sourceType);
@@ -178,6 +176,12 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
 
   // Remove selected audio
   function removeFile() {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.removeAttribute("src");
+      audioRef.current.load();
+    }
+
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = null;
@@ -188,12 +192,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
     setError("");
     setRecordingError("");
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
-
-    // Notify parent that the file was removed
+    // Notify parent
     onFileSelected?.(null, "upload");
   }
 
@@ -250,7 +249,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
           ? "audio/webm"
           : "";
 
-      // Create recorder with speech-friendly bitrate
+      // Create recorder
       const recorder = mimeType
         ? new MediaRecorder(stream, {
             mimeType,
@@ -527,7 +526,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
             </button>
           </div>
 
-          {/* Native audio player */}
+          {/* Audio preview - FIXED */}
           <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
               <AudioLines size={18} className="text-violet-600" />
@@ -535,12 +534,25 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
             </div>
 
             <audio
+              key={audioUrl}
               ref={audioRef}
-              src={audioUrl}
               controls
-              preload="metadata"
-              className="w-full"
+              preload="auto"
+              src={audioUrl}
+              className="block w-full"
+              onError={() => {
+                setError(
+                  "Unable to play this audio file in your browser. Try another audio format.",
+                );
+              }}
+              onLoadedMetadata={() => {
+                setError("");
+              }}
             />
+
+            <p className="mt-2 text-xs text-slate-500">
+              Listen to your audio before starting transcription.
+            </p>
           </div>
 
           {/* Change audio */}
@@ -554,7 +566,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
         </div>
       )}
 
-      {/* File validation error */}
+      {/* File validation / playback error */}
       {error && (
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
