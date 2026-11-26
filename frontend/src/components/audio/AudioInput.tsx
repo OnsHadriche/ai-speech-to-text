@@ -534,8 +534,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
             <div className="mt-5">
             <AudioPreview src={audioUrl}/>
             </div>
-              Your browser does not support audio playback.
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 p-4 text-xs text-slate-500">
               Listen to your original audio file before starting transcription.
             </p>
           </div>
