@@ -110,3 +110,60 @@ export async function analyzeDocument(
 
   return response.json();
 }
+
+export type SegmentType =
+  | "title"
+  | "subtitle"
+  | "heading"
+  | "subheading"
+  | "paragraph"
+  | "definition"
+  | "example"
+  | "quotation"
+  | "list_item"
+  | "question"
+  | "answer"
+  | "exercise_instruction"
+  | "table"
+  | "conclusion"
+  | "other";
+
+export interface ReviewSegment {
+  id: string;
+  position: number;
+  original_text: string;
+  suggested_type: SegmentType | null;
+  suggestion_confidence: number | null;
+  suggestion_reason: string | null;
+  selected_type: SegmentType | null;
+  classification_status: string;
+}
+
+export interface ClassificationBatch {
+  id: string;
+  batch_number: number;
+  status: string;
+}
+
+export interface NextBatchResponse {
+  document_id: string;
+  status: string;
+  message?: string;
+  batch: ClassificationBatch | null;
+  total_segments: number;
+  segments: ReviewSegment[];
+}
+
+export async function getNextClassificationBatch(
+  documentId: string
+): Promise<NextBatchResponse> {
+  const response = await fetch(
+    `${API_URL}/api/documents/${documentId}/batches/next`
+  );
+
+  if (!response.ok) {
+    await handleApiError(response);
+  }
+
+  return response.json();
+}
