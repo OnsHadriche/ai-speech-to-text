@@ -147,7 +147,11 @@ export default function TranscriptionPanel({
             wordCount={wordCount}
           />
 
-          <NextStepCard />
+          <NextStepCard
+            onContinue={() => {
+                // Next phase will be implemented here
+            }}
+            />
         </div>
       )}
 
