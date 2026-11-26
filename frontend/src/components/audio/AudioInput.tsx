@@ -11,7 +11,7 @@ import {
   Mic,
   StopCircle,
 } from "lucide-react";
-
+import { AudioPreview } from "./AudioPreview";
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
 const ALLOWED_EXTENSIONS = [
@@ -137,14 +137,13 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
       URL.revokeObjectURL(audioUrlRef.current);
     }
 
-    // Create new preview URL
+    // Create preview URL for the original file
     const newAudioUrl = URL.createObjectURL(file);
     audioUrlRef.current = newAudioUrl;
 
     setAudioUrl(newAudioUrl);
     setSelectedFile(file);
     setRecordingError("");
-    setError("");
 
     // Notify parent
     onFileSelected?.(file, sourceType);
@@ -176,12 +175,6 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
 
   // Remove selected audio
   function removeFile() {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.removeAttribute("src");
-      audioRef.current.load();
-    }
-
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = null;
@@ -192,7 +185,13 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
     setError("");
     setRecordingError("");
 
-    // Notify parent
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.load();
+    }
+
+    // Notify parent that the file was removed
     onFileSelected?.(null, "upload");
   }
 
@@ -526,32 +525,18 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
             </button>
           </div>
 
-          {/* Audio preview - FIXED */}
+          {/* Audio preview */}
           <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
               <AudioLines size={18} className="text-violet-600" />
               Audio preview
             </div>
-
-            <audio
-              key={audioUrl}
-              ref={audioRef}
-              controls
-              preload="auto"
-              src={audioUrl}
-              className="block w-full"
-              onError={() => {
-                setError(
-                  "Unable to play this audio file in your browser. Try another audio format.",
-                );
-              }}
-              onLoadedMetadata={() => {
-                setError("");
-              }}
-            />
-
+            <div className="mt-5">
+            <AudioPreview src={audioUrl}/>
+            </div>
+              Your browser does not support audio playback.
             <p className="mt-2 text-xs text-slate-500">
-              Listen to your audio before starting transcription.
+              Listen to your original audio file before starting transcription.
             </p>
           </div>
 
@@ -566,7 +551,7 @@ function AudioInput({ onFileSelected }: AudioInputProps) {
         </div>
       )}
 
-      {/* File validation / playback error */}
+      {/* File validation error */}
       {error && (
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
