@@ -67,7 +67,7 @@ export async function getJob(
   jobId: string,
 ): Promise<JobResponse> {
   const response = await fetch(`${API_URL}/api/jobs/${jobId}`, {
-    method: "POST",
+    method: "GET",
   });
 
   if (!response.ok) {
