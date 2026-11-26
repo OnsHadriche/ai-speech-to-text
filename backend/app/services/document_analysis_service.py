@@ -60,7 +60,7 @@ def analyze_document(
     if job is None:
         raise ValueError("Transcription job not found.")
 
-    transcript = job.transcript_text
+    transcript = (document.reviewed_transcript or job.transcript_text)
 
     if not transcript or not transcript.strip():
         raise ValueError(
