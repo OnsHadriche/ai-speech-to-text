@@ -61,7 +61,11 @@ def validate_segment_hierarchy(
         # Top-level segment
         if parent_index is None:
             continue
-
+        if not isinstance(parent_index, int) or isinstance(parent_index, bool):
+            raise ValueError(
+                f"Invalid parent index for segment {child_index}: "
+                f"{parent_index}"
+            )
         # Reject invalid index values
         if parent_index < 0 or parent_index >= len(segments):
             raise ValueError(
