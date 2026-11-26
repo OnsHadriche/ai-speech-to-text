@@ -167,3 +167,60 @@ export async function getNextClassificationBatch(
 
   return response.json();
 }
+
+
+// --------------------------------------------------
+// Submit batch classifications
+// --------------------------------------------------
+
+export interface ClassificationSubmission {
+  segment_id: string;
+  selected_type: SegmentType;
+  comment?: string | null;
+}
+
+export interface SubmitBatchClassificationsRequest {
+  classifications: ClassificationSubmission[];
+}
+
+export interface SubmitBatchClassificationsResponse {
+  message: string;
+  document_id: string;
+  batch: {
+    id: string;
+    batch_number: number;
+    status: string;
+  };
+  submitted_count: number;
+  confirmed_count: number;
+  classifications: {
+    segment_id: string;
+    selected_type: SegmentType;
+    classification_source: string;
+    classification_status: string;
+  }[];
+  next_batch_index: number;
+}
+
+export async function submitBatchClassifications(
+  documentId: string,
+  batchId: string,
+  payload: SubmitBatchClassificationsRequest
+): Promise<SubmitBatchClassificationsResponse> {
+  const response = await fetch(
+    `${API_URL}/api/documents/${documentId}/batches/${batchId}/classifications`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    await handleApiError(response);
+  }
+
+  return response.json();
+}

@@ -27,6 +27,11 @@ import { useToast } from "./hooks/useToast";
 import { useAudioUpload } from "./hooks/useAudioUpload";
 
 import type { AudioSourceType } from "./services/jobs";
+import {
+  CLASSIFICATION_OPTIONS,
+  getClassificationLabel,
+  type SegmentType,
+} from "./constants/classification";
 
 import {
   createDocument,
@@ -57,7 +62,9 @@ function App() {
     useState<AudioSourceType>("upload");
 
   const [audioInputKey, setAudioInputKey] = useState(0);
-
+  const [segmentSelections, setSegmentSelections] = useState<
+    Record<string, SegmentType>
+  >({});
   // ==========================================
   // Workflow state
   // ==========================================
@@ -233,6 +240,7 @@ function App() {
     setAnalysisResult(null);
     setCurrentBatch(null);
     setIsAnalysisDetailsOpen(false);
+    setSegmentSelections({});
 
     try {
       // 1. Create document using reviewed transcript
@@ -327,6 +335,8 @@ function App() {
     resetUpload();
     hideToast();
 
+    setSegmentSelections({});
+
     setAudioInputKey((previousKey) => previousKey + 1);
   }, [resetUpload, hideToast]);
 
@@ -347,6 +357,17 @@ function App() {
     .trim()
     .split(/\s+/)
     .filter(Boolean).length;
+  
+  const handleSegmentTypeChange = useCallback(
+      (segmentId: string, selectedType: SegmentType) => {
+        setSegmentSelections((previous) => ({
+          ...previous,
+          [segmentId]: selectedType,
+        }));
+      },
+      []
+    
+    );
 
   // ==========================================
   // Render
@@ -985,19 +1006,46 @@ function App() {
                                             </div>
                                           </div>
                                         )}
+                                        <div className="rounded-lg border border-slate-100 p-3">
+                                        <label
+                                          htmlFor={`classification-${segment.id}`}
+                                          className="text-xs font-medium text-slate-500"
+                                        >
+                                          Classification
+                                        </label>
 
-                                      <div className="rounded-lg border border-slate-100 p-3">
-                                        <p className="text-xs text-slate-500">
-                                          Selected Type
-                                        </p>
+                                        <select
+                                          id={`classification-${segment.id}`}
+                                          value={
+                                            segmentSelections[segment.id] ??
+                                            segment.selected_type ??
+                                            segment.suggested_type ??
+                                            ""
+                                          }
+                                          onChange={(event) =>
+                                            handleSegmentTypeChange(
+                                              segment.id,
+                                              event.target.value as SegmentType
+                                            )
+                                          }
+                                          className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                                        >
+                                          <option value="" disabled>
+                                            Select classification
+                                          </option>
 
-                                        <p className="mt-1 font-semibold capitalize text-slate-900">
-                                          {segment.selected_type
-                                            ? segment.selected_type.replaceAll(
-                                                "_",
-                                                " "
-                                              )
-                                            : "Not confirmed"}
+                                          {CLASSIFICATION_OPTIONS.map((option) => (
+                                            <option
+                                              key={option.value}
+                                              value={option.value}
+                                            >
+                                              {option.label}
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        <p className="mt-2 text-xs text-slate-400">
+                                          Review the AI suggestion or choose another classification.
                                         </p>
                                       </div>
                                     </div>
