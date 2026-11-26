@@ -1,18 +1,18 @@
-
 import { useState } from "react";
 import {
-  AudioLines,
   AlertCircle,
   CheckCircle2,
   FileText,
   Languages,
-  Loader2,
   RotateCcw,
   Sparkles,
 } from "lucide-react";
 
 import { transcribeAudio } from "../../services/jobs";
 import type { JobResponse } from "../../services/jobs";
+
+import Button from "../ui/Button";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
 interface TranscriptionPanelProps {
   job: JobResponse;
@@ -34,7 +34,8 @@ export default function TranscriptionPanel({
 }: TranscriptionPanelProps) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState("");
-  const [transcribedJob, setTranscribedJob] = useState<JobResponse | null>(null);
+  const [transcribedJob, setTranscribedJob] =
+    useState<JobResponse | null>(null);
   const [transcriptText, setTranscriptText] = useState("");
 
   async function handleTranscribe() {
@@ -97,49 +98,46 @@ export default function TranscriptionPanel({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleTranscribe}
-            disabled={isTranscribing}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-          >
-            {isTranscribing ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Transcribing...
-              </>
-            ) : (
-              <>
-                <AudioLines size={18} />
-                Start transcription
-              </>
-            )}
-          </button>
+          {/* Transcription action */}
+          <div className="mt-6">
+            <Button
+              disabled={isTranscribing}
+              onClick={handleTranscribe}
+              icon={<FileText size={17} />}
+            >
+              {isTranscribing ? "Transcribing..." : "Start transcription"}
+            </Button>
+          </div>
 
-          {/* Processing state */}
+          {/* Transcription loading state */}
           {isTranscribing && (
-            <div className="mt-5 rounded-xl border border-blue-100 bg-white/70 p-4">
-              <div className="flex items-center gap-3">
-                <Loader2 size={20} className="animate-spin text-blue-600" />
+            <div className="mt-5 rounded-xl border border-violet-100 bg-white/70 p-5">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <LoadingSpinner
+                  size={32}
+                  text="Transcribing your audio..."
+                  className="flex-col"
+                />
 
                 <div>
-                  <p className="font-medium text-blue-900">
+                  <p className="font-medium text-violet-900">
                     Transcription in progress
                   </p>
 
-                  <p className="mt-1 text-sm text-blue-700">
-                    Processing your audio. This may take a while depending
-                    on its duration.
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Processing your audio. This may take a few moments
+                    depending on its duration.
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Error */}
+          {/* Transcription error */}
           {transcriptionError && (
             <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <AlertCircle size={18} className="mt-0.5 shrink-0" />
+
               <div>
                 <p className="font-semibold">Transcription failed</p>
                 <p className="mt-1">{transcriptionError}</p>
@@ -175,8 +173,7 @@ export default function TranscriptionPanel({
               {transcribedJob.detected_language && (
                 <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm text-slate-600">
                   <Languages size={15} className="text-violet-500" />
-                  Language:{" "}
-                  <strong>{transcribedJob.detected_language}</strong>
+                  Language: <strong>{transcribedJob.detected_language}</strong>
                 </div>
               )}
 
