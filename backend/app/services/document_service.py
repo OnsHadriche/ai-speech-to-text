@@ -9,6 +9,7 @@ def create_document_from_job(
     db: Session,
     job_id: str,
     language: str = "ar",
+    reviewed_transcript: str | None = None
 ) -> Document:
     """
     Create an educational document from an existing transcription job.
@@ -29,6 +30,10 @@ def create_document_from_job(
         raise ValueError(
             "The job does not contain a valid transcription."
         )
+    transcript = reviewed_transcript or job.transcript_text
+
+    if not transcript or not transcript.strip():
+        raise ValueError("Transcript cannot be empty")
 
     # 3. Prevent duplicate documents
     existing_document = db.scalar(
@@ -45,6 +50,7 @@ def create_document_from_job(
         job_id=job.id,
         language=language,
         status="transcribed",
+        reviewed_transcript=transcript
     )
 
     db.add(document)
