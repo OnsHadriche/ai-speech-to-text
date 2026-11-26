@@ -1,3 +1,5 @@
+import LoadingSpinner from "./LoadingSpinner";
+
 interface StatusBadgeProps {
   status: "online" | "offline" | "checking";
 }
@@ -16,7 +18,7 @@ const statusConfig = {
   checking: {
     label: "Checking backend...",
     styles: "border-slate-200 bg-slate-50 text-slate-500",
-    dot: "bg-slate-400 animate-pulse",
+    dot: "bg-slate-400",
   },
 };
 
@@ -27,7 +29,12 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
     <div
       className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium ${config.styles}`}
     >
-      <span className={`h-2 w-2 rounded-full ${config.dot}`} />
+      {status === "checking" ? (
+        <LoadingSpinner size={14} />
+      ) : (
+        <span className={`h-2 w-2 rounded-full ${config.dot}`} />
+      )}
+
       {config.label}
     </div>
   );
